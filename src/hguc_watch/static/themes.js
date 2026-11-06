@@ -24,6 +24,9 @@
       selected = theme;
       if (theme === 'classic') delete root.dataset.skin;
       else root.dataset.skin = theme;
+      const scene = theme === 'haman' ? 'haman-qubeley-gaza-c-20261106.png' : 'classic-sazabi-nightingale-20261106.png';
+      root.style.setProperty('--skin-hangar', `url("/static/assets/themes/${scene}")`);
+      root.style.setProperty('--skin-hangar-ratio', theme === 'haman' ? '1983 / 793' : '2 / 1');
       picker.value = theme;
       status.textContent = `当前：${themes[theme].name}`;
       gallery.querySelectorAll('button').forEach(button => {

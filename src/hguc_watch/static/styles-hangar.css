@@ -11,7 +11,7 @@
   overflow: hidden;
   isolation: isolate;
   background-color: #101719;
-  background-image: url('/static/assets/terminal.svg');
+  background-image: url('/static/assets/themes/classic-sazabi-nightingale-20261106.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -127,7 +127,7 @@
   background:
     linear-gradient(90deg, rgba(9, 10, 12, .78), rgba(12, 14, 16, .52) 55%, rgba(20, 8, 11, .68)),
     linear-gradient(0deg, rgba(15, 4, 7, .88), transparent 58%),
-    url('/static/assets/terminal.svg') center / cover no-repeat;
+    url('/static/assets/themes/classic-sazabi-nightingale-20261106.png') center / cover no-repeat;
   opacity: .72;
   filter: saturate(.82) contrast(1.08);
   transform: scale(1.015);

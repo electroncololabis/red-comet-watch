@@ -13,7 +13,7 @@ html[data-skin] .page-atmosphere { background:var(--skin-base); }
 html[data-skin] .page-atmosphere-hangar { background-image:linear-gradient(90deg,var(--skin-base),transparent 55%,var(--skin-base)),var(--skin-hangar); opacity:.4; filter:none; }
 html[data-skin] .page-atmosphere::after { background:linear-gradient(0deg,var(--skin-base),transparent); }
 html[data-skin] .page-atmosphere > img { opacity:.12; }
-.hangar-stage { background-image:var(--skin-hangar,url('/static/assets/terminal.svg')); }
+.hangar-stage { background-image:var(--skin-hangar,url('/static/assets/themes/classic-sazabi-nightingale-20261106.png')); }
 html[data-skin] .hangar-stage .hero-serial { background:rgba(0,0,0,.5); padding:8px 12px; color:#e9edf0; }
 html[data-skin] .hangar-stage .hero-serial b { color:#fff; }
 html[data-skin] .hangar-stage .secretary-visual { width:29%; right:1%; bottom:0; height:98%; }
@@ -95,4 +95,9 @@ html[data-skin="murasame"][data-hangar="a"] .hangar-stage .hero-serial { left:32
 .skin-family[data-family="murasame"] .skin-version:first-child .skin-scene img { left:1%; right:auto; }
 
 html[data-skin][data-hangar="a"] .hangar-stage .command-sigil { display:none; }
-:root { --skin-hangar: url('/static/assets/terminal.svg'); }
+:root { --skin-hangar: url('/static/assets/themes/classic-sazabi-nightingale-20261106.png'); }
+
+/* Approved scenes retain their full framing. */
+.hangar-stage { aspect-ratio:var(--skin-hangar-ratio,2 / 1); }
+html:not([data-skin]) .hangar-stage .secretary-visual { width:18%; height:70%; right:0; bottom:0; }
+html[data-skin="haman"] .hangar-stage .secretary-visual { width:20%; height:72%; left:0; bottom:0; }
