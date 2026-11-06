@@ -1,0 +1,311 @@
+/* Desktop hangar composition: full scene above the weekly briefing. */
+.command-hero {
+  min-height: 0;
+  background: #111719;
+  border-color: #4c3c38;
+}
+.hangar-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: #101719;
+  background-image: url('/static/assets/terminal.svg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.hangar-stage .secretary-visual {
+  background: transparent;
+  border-left: 0;
+  filter: drop-shadow(-12px 4px 16px rgba(0, 0, 0, .28));
+}
+.hangar-stage .secretary-visual::after { display: none; }
+.hangar-stage .secretary-visual img {
+  width: 97%;
+  height: 98%;
+  object-fit: contain;
+  object-position: right bottom;
+}
+.hangar-stage .hero-serial {
+  top: 22px;
+  left: 28px;
+  right: auto;
+  text-align: left;
+  color: #c1b6a5;
+  font-size: clamp(8px, .3vw, 11px);
+  text-shadow: 0 2px 5px #000;
+}
+.hangar-stage .hero-serial b { color: #dcac81; }
+.hangar-stage .command-sigil {
+  top: 28px;
+  right: 28px;
+  width: 44px;
+  height: 44px;
+  opacity: .35;
+}
+.hangar-stage .command-sigil::before { left: 20px; top: -10px; width: 2px; height: 62px; }
+.hangar-stage .command-sigil::after { left: -10px; top: 20px; width: 62px; height: 2px; }
+.hangar-stage .command-sigil i { inset: 14px; }
+.hangar-stage .command-sigil b { left: 18px; top: 18px; width: 6px; height: 6px; }
+
+.command-briefing-row {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(420px, 1fr);
+  align-items: stretch;
+  gap: clamp(20px, 1vw, 38px);
+  padding: clamp(22px, 1.05vw, 40px);
+  border-top: 1px solid rgba(218, 178, 105, .27);
+  background: linear-gradient(115deg, #2c1217, #151a1d 64%, #111719);
+}
+.command-briefing-row .hero-copy {
+  display: grid;
+  grid-template-columns: minmax(205px, .85fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 14px clamp(18px, .8vw, 30px);
+  max-width: none;
+  padding: 0;
+}
+.command-briefing-row .hero-tag {
+  grid-column: 1 / -1;
+  font-size: clamp(8px, .32vw, 12px);
+}
+.command-briefing-row .hero-copy h2 {
+  margin: 0;
+  font-size: clamp(31px, 1.7vw, 60px);
+  line-height: 1.12;
+}
+.command-briefing-row .secretary-briefing {
+  width: 100%;
+  padding: clamp(12px, .65vw, 22px);
+  background: rgba(6, 12, 15, .48);
+  border-color: rgba(224, 183, 110, .27);
+}
+.command-briefing-row .secretary-briefing span { font-size: clamp(8px, .3vw, 11px); }
+.command-briefing-row .secretary-briefing p {
+  margin-top: 8px;
+  font-size: clamp(12px, .44vw, 16px);
+  line-height: 1.75;
+}
+.command-briefing-row .metrics {
+  position: static;
+  align-self: stretch;
+  background: rgba(3, 11, 14, .58);
+  min-width: 0;
+}
+.command-briefing-row .metrics article {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 130px;
+  padding: clamp(14px, .8vw, 28px);
+}
+.command-briefing-row .metrics span { color: #b2a99c; font-size: clamp(8px, .3vw, 11px); }
+.command-briefing-row .metrics strong { margin: 12px 0 8px; font-size: clamp(24px, 1.05vw, 38px); }
+.command-briefing-row .metrics small {
+  white-space: normal;
+  line-height: 1.6;
+  color: #9caaac;
+  font-size: clamp(10px, .32vw, 12px);
+}
+
+/* Fixed hangar atmosphere remains behind the price list while scrolling. */
+.page-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #0a0e10;
+}
+.page-atmosphere-hangar {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(9, 10, 12, .78), rgba(12, 14, 16, .52) 55%, rgba(20, 8, 11, .68)),
+    linear-gradient(0deg, rgba(15, 4, 7, .88), transparent 58%),
+    url('/static/assets/terminal.svg') center / cover no-repeat;
+  opacity: .72;
+  filter: saturate(.82) contrast(1.08);
+  transform: scale(1.015);
+}
+.page-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 8%, rgba(181, 28, 37, .17), transparent 28%),
+    linear-gradient(90deg, rgba(40, 6, 11, .48), transparent 36% 72%, rgba(50, 7, 13, .28));
+}
+.page-atmosphere > img {
+  position: absolute;
+  z-index: 1;
+  right: clamp(95px, 5.8vw, 220px);
+  bottom: -5vh;
+  width: auto;
+  height: min(82vh, 1720px);
+  opacity: .25;
+  object-fit: contain;
+  filter: saturate(.86) drop-shadow(-20px 8px 28px rgba(0, 0, 0, .55));
+}
+.shell {
+  position: relative;
+  z-index: 1;
+}
+main {
+  background: linear-gradient(90deg, rgba(10, 3, 5, .48), rgba(6, 7, 8, .18));
+}
+header {
+  padding: 18px 22px;
+  background: linear-gradient(90deg, rgba(24, 5, 9, .88), rgba(12, 10, 12, .54));
+  border: 1px solid rgba(242, 201, 92, .1);
+  backdrop-filter: blur(14px);
+}
+.section-title {
+  padding: 13px 16px 11px;
+  background: linear-gradient(90deg, rgba(34, 8, 13, .88), rgba(13, 13, 15, .48));
+  border: 1px solid rgba(242, 201, 92, .12);
+  backdrop-filter: blur(12px);
+}
+.model-card {
+  background:
+    linear-gradient(135deg, rgba(213, 37, 48, .24), transparent 38%),
+    linear-gradient(180deg, rgba(58, 15, 23, .92), rgba(20, 6, 10, .88));
+  border-color: rgba(145, 50, 59, .72);
+  box-shadow: 0 17px 42px rgba(0, 0, 0, .48);
+  backdrop-filter: blur(15px) saturate(1.08);
+}
+.model-card:hover {
+  background:
+    linear-gradient(135deg, rgba(232, 46, 56, .31), transparent 42%),
+    rgba(50, 12, 19, .93);
+}
+.listing {
+  background: rgba(5, 4, 6, .65);
+  backdrop-filter: blur(8px);
+}
+.panel {
+  background:
+    linear-gradient(155deg, rgba(198, 27, 39, .14), transparent 32%),
+    rgba(33, 9, 14, .9);
+  backdrop-filter: blur(16px);
+}
+
+/* ---------------------------------------------------------------------------
+   数据新鲜度：最近一次侦察失败要摆在脸上，旧批次的报价要肉眼可辨。
+   --------------------------------------------------------------------------- */
+.freshness-banner:empty { display: none; }
+.freshness-banner {
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  border: 1px solid rgba(242, 201, 92, .3);
+  border-left-width: 4px;
+  background: rgba(20, 8, 11, .82);
+  backdrop-filter: blur(12px);
+  color: #e6dccb;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.freshness-banner.error {
+  border-color: rgba(226, 66, 72, .62);
+  border-left-color: #e24248;
+  background:
+    linear-gradient(90deg, rgba(151, 18, 26, .55), rgba(24, 6, 9, .86));
+}
+.freshness-banner.warn {
+  border-color: rgba(226, 165, 60, .6);
+  border-left-color: #e2a53c;
+  background:
+    linear-gradient(90deg, rgba(120, 78, 12, .48), rgba(24, 10, 9, .86));
+}
+.freshness-banner .freshness-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-bottom: 6px;
+}
+.freshness-banner .freshness-head b {
+  color: #ffd98a;
+  font-size: 15px;
+  letter-spacing: .04em;
+}
+.freshness-banner.error .freshness-head b { color: #ff9c9c; }
+.freshness-banner .freshness-head span { color: #a99c8d; font-size: 12px; }
+.freshness-banner p { margin: 4px 0 0; }
+.freshness-banner b { color: #ffd98a; }
+.freshness-banner .freshness-reason {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(242, 201, 92, .22);
+  color: #c9bdb0;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* 旧批次的卡片：整体压暗一点，价格框带斜纹，避免被当成今天的价格。 */
+.model-card.stale { border-color: rgba(150, 110, 70, .6); }
+.price-box.current.stale {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(242, 201, 92, .07) 0 6px,
+    transparent 6px 12px
+  );
+  border-color: rgba(226, 165, 60, .5);
+}
+.price-box.current.stale > span:first-child { color: #e2a53c; }
+.price-box .collected {
+  display: block;
+  margin-top: 4px;
+  color: #9b9186;
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+.stale-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(226, 165, 60, .55);
+  color: #e2a53c;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+.old-rule-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(150, 160, 175, .5);
+  color: #a9b3c0;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+.listing-row .old-rule-tag { margin-top: 0; margin-left: 6px; }
+.shipping-pending { margin-top: 12px; padding: 12px; border: 1px solid rgba(226, 165, 60, .4); color: #e2a53c; font-size: 12px; }
+.shipping-pending small { display: block; color: #b7a99a; margin-top: 5px; }
+.shipping-pending > div { margin-top: 10px; }
+.shipping-pending a { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #ddd1bc; }
+.shipping-pending strong { display: block; margin-top: 4px; }
+.marketplace-status { display: flex; flex-wrap: wrap; gap: 8px 20px; color: #c9bdb0; font-size: 12px; margin: 12px 0; }
+.marketplace-lowest { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 12px 0; font-size: 12px; }
+.marketplace-lowest a { color: #e2c38c; }
+.search-help { color: #c9bdb0; font-size: 12px; line-height: 1.8; margin: 12px 0; }
+#connectionBanner[hidden] { display: none; }
+#connectionBanner .button { margin-top: 10px; }
+#searchProgress { padding: 12px 16px; border-left: 3px solid #e2a53c; background: rgba(24, 10, 9, .86); color: #ffd98a; }
+#searchProgress[hidden] { display: none; }
+#searchPlatform { width: 150px; min-height: 40px; }
+.quote-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.quote-controls > a { color: #e2c38c; font-size: 10px; }
+.block-listing-button { color: #cf978c; font-size: 10px; }
+.block-listing-button:hover { color: #ff9c9c; }
+.blocked-entry { display: flex; gap: 18px; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid rgba(242,201,92,.17); }
+.blocked-entry > div { min-width: 0; }
+.blocked-entry small { display: block; color: #b7a99a; font-size: 12px; margin-bottom: 8px; }
+.blocked-entry a { color: #e2c38c; font-size: 14px; overflow-wrap: anywhere; }
+.blocked-entry > button { flex-shrink: 0; }
+.msrp-price a { display: inline-block; margin-top: 6px; color: #e2c38c; font-size: 10px; }
+.msrp-price span { color: #c3ab99; font-size: 9px; letter-spacing: 0; white-space: normal; }
+.msrp-price small { color: #e8cc98; font-size: 11px; line-height: 1.6; white-space: normal; }

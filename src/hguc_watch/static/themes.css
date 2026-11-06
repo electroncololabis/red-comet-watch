@@ -1,0 +1,98 @@
+/* Each theme changes surfaces, text and controls as well as the illustrations. */
+html[data-skin="zaku"] { --skin-base:#0b100b; --skin-panel:#172215; --skin-high:#293b25; --skin-text:#edf1df; --skin-muted:#b4bda6; --skin-accent:#b2c78a; --skin-gold:#d6bb79; --skin-edge:#526547; --skin-button:#59743d; --skin-button-text:#fff; --skin-price:#d9e7ad; }
+html[data-skin="haman"] { --skin-base:#f4edf0; --skin-panel:#fffafd; --skin-high:#efdbe5; --skin-text:#432d3d; --skin-muted:#725465; --skin-accent:#ad426e; --skin-gold:#84602d; --skin-edge:#cfadbd; --skin-button:#9d365e; --skin-button-text:#fff; --skin-price:#9d2855; }
+html[data-skin="federation"] { --skin-base:#071421; --skin-panel:#102438; --skin-high:#1d3e59; --skin-text:#e6f3ff; --skin-muted:#a6c3da; --skin-accent:#72c9ff; --skin-gold:#c0ddef; --skin-edge:#355d7b; --skin-button:#245c88; --skin-button-text:#fff; --skin-price:#99dcff; }
+html[data-skin="murasame"] { --skin-base:#0d0a17; --skin-panel:#1a1326; --skin-high:#38234c; --skin-text:#eee9fa; --skin-muted:#bcadce; --skin-accent:#c3a0ff; --skin-gold:#74d9d5; --skin-edge:#604776; --skin-button:#724699; --skin-button-text:#fff; --skin-price:#8de8df; }
+html[data-skin] { --void:var(--skin-base); --void-2:var(--skin-panel); --panel:var(--skin-panel); --panel-2:var(--skin-high); --armor:var(--skin-panel); --armor-hi:var(--skin-high); --paper:var(--skin-text); --muted:var(--skin-muted); --red:var(--skin-accent); --red-bright:var(--skin-accent); --gold:var(--skin-gold); --khaki:var(--skin-gold); --olive:var(--skin-accent); --olive-bright:var(--skin-accent); --line:var(--skin-edge); --line-hot:var(--skin-accent); background:var(--skin-base); }
+html[data-skin] body { color:var(--skin-text); background:var(--skin-base); }
+html[data-skin] body::before { opacity:.04; }
+html[data-skin] .sidebar { color:var(--skin-text); background:linear-gradient(150deg,var(--skin-high),var(--skin-panel) 48%,var(--skin-base)); border-color:var(--skin-edge); }
+html[data-skin] .sidebar::before { background:var(--skin-gold); }
+html[data-skin] main { background:color-mix(in srgb,var(--skin-base) 78%,transparent); }
+html[data-skin] .page-atmosphere { background:var(--skin-base); }
+html[data-skin] .page-atmosphere-hangar { background-image:linear-gradient(90deg,var(--skin-base),transparent 55%,var(--skin-base)),var(--skin-hangar); opacity:.4; filter:none; }
+html[data-skin] .page-atmosphere::after { background:linear-gradient(0deg,var(--skin-base),transparent); }
+html[data-skin] .page-atmosphere > img { opacity:.12; }
+.hangar-stage { background-image:var(--skin-hangar,url('/static/assets/terminal.svg')); }
+html[data-skin] .hangar-stage .hero-serial { background:rgba(0,0,0,.5); padding:8px 12px; color:#e9edf0; }
+html[data-skin] .hangar-stage .hero-serial b { color:#fff; }
+html[data-skin] .hangar-stage .secretary-visual { width:29%; right:1%; bottom:0; height:98%; }
+html[data-skin] .command-hero, html[data-skin] header, html[data-skin] .section-title, html[data-skin] .panel, html[data-skin] dialog, html[data-skin] .model-card { background:linear-gradient(135deg,var(--skin-panel),var(--skin-high)); border-color:var(--skin-edge); color:var(--skin-text); }
+html[data-skin] .command-briefing-row { background:var(--skin-panel); border-color:var(--skin-edge); }
+html[data-skin] .command-briefing-row .metrics, html[data-skin] .secretary-briefing { background:var(--skin-base); border-color:var(--skin-edge); }
+html[data-skin] .hero-copy h2, html[data-skin] h1, html[data-skin] h2, html[data-skin] h3, html[data-skin] .model-code, html[data-skin] .price-box strong, html[data-skin] .brand strong, html[data-skin] .spouse-meter > strong, html[data-skin] .panel-title h2 { color:var(--skin-text); }
+html[data-skin] .hero-copy h2 em, html[data-skin] .eyebrow, html[data-skin] .card-kicker, html[data-skin] .hero-tag, html[data-skin] .hero-tag i { color:var(--skin-accent); }
+html[data-skin] .hero-copy h2 { font-size:clamp(26px,1.65vw,48px); }
+html[data-skin] .nav-item { color:var(--skin-muted); }
+html[data-skin] .nav-item.active { color:var(--skin-text); background:var(--skin-high); border-color:var(--skin-accent); }
+html[data-skin] .nav-item span, html[data-skin] .nav-item small, html[data-skin] header p, html[data-skin] .search-help, html[data-skin] .price-box small, html[data-skin] .price-box span, html[data-skin] .listing-meta, html[data-skin] .model-code, html[data-skin] .section-title p, html[data-skin] .sidebar-foot span, html[data-skin] .sidebar-code, html[data-skin] .metrics small, html[data-skin] .metrics span, html[data-skin] .secretary-briefing p, html[data-skin] .panel-title > span { color:var(--skin-muted); }
+html[data-skin] .price-box.current strong, html[data-skin] .msrp-price small { color:var(--skin-price); text-shadow:none; }
+html[data-skin] .price-box, html[data-skin] .price-strip, html[data-skin] .listing-row, html[data-skin] .panel-title { border-color:var(--skin-edge); }
+html[data-skin] .listing, html[data-skin] .lowest-three, html[data-skin] .top-three, html[data-skin] .listing-ranking, html[data-skin] .shipping-pending, html[data-skin] .spouse-meter, html[data-skin] .wife-face, html[data-skin] .purchase-target { background:var(--skin-base); border-color:var(--skin-edge); }
+html[data-skin] .listing a, html[data-skin] .listing-row a, html[data-skin] .shipping-pending a, html[data-skin] .marketplace-lowest a, html[data-skin] .quote-controls > a, html[data-skin] .blocked-entry a, html[data-skin] .msrp-price a { color:var(--skin-gold); }
+html[data-skin] .shipping-pending, html[data-skin] .shipping-pending small, html[data-skin] .marketplace-status, html[data-skin] .text-button, html[data-skin] .card-actions, html[data-skin] .price-delta, html[data-skin] .block-listing-button { color:var(--skin-muted); }
+html[data-skin] .button, html[data-skin] .icon-button, html[data-skin] input, html[data-skin] select, html[data-skin] textarea { color:var(--skin-text); background:var(--skin-base); border-color:var(--skin-edge); }
+html[data-skin] .button.primary { background:var(--skin-button); color:var(--skin-button-text); border-color:var(--skin-accent); box-shadow:none; }
+html[data-skin] .button.secondary:hover, html[data-skin] .icon-button:hover { background:var(--skin-high); }
+html[data-skin] .spouse-meter { box-shadow:0 10px 30px #0005; }
+html[data-skin] .brand-mark, html[data-skin] .brand-mark::before, html[data-skin] .brand-mark::after { border-color:var(--skin-accent); }
+html[data-skin] .brand-mark { background:radial-gradient(circle at center,var(--skin-high),var(--skin-base)); box-shadow:inset 0 0 0 3px var(--skin-base); }
+html[data-skin]:not([data-skin="zaku"]) .brand-mark i::after { background:var(--skin-accent); box-shadow:0 0 8px var(--skin-accent); }
+html[data-skin] .metrics strong, html[data-skin] .spouse-header b, html[data-skin] .sidebar-foot strong, html[data-skin] .purchase-target strong, html[data-skin] td { color:var(--skin-text); }
+html[data-skin] .brand span, html[data-skin] .unit-stamp, html[data-skin] .section-title span, html[data-skin] .secretary-briefing span, html[data-skin] .note-panel p, html[data-skin] label, html[data-skin] th, html[data-skin] .blocked-entry small, html[data-skin] .purchase-target small, html[data-skin] .purchase-target span, html[data-skin] .spouse-header span, html[data-skin] .spouse-meter > small, html[data-skin] .threshold, html[data-skin] .empty { color:var(--skin-muted); }
+html[data-skin] .listing-row > strong { color:var(--skin-price); }
+html[data-skin] .listing-row > b, html[data-skin] .button span { color:var(--skin-muted); }
+html[data-skin] .button.primary span { color:inherit; }
+html[data-skin] .toast { color:var(--skin-text); background:var(--skin-panel); border-color:var(--skin-edge); border-left-color:var(--skin-accent); }
+html[data-skin] .model-card:hover { background:var(--skin-high); border-color:var(--skin-accent); }
+html[data-skin] .command-hero::after { box-shadow:128px 0 var(--skin-gold),256px 0 var(--skin-edge); }
+html[data-skin] .metrics article::before { background:var(--skin-accent); }
+html[data-skin] td, html[data-skin] th, html[data-skin] .dialog-head { border-color:var(--skin-edge); }
+html[data-skin="haman"] .freshness-banner { color:#623e38; background:#fff4e3; }
+html[data-skin="haman"] .freshness-banner b, html[data-skin="haman"] .freshness-banner .freshness-head b { color:#8d4b13; }
+html[data-skin="haman"] .freshness-banner.error b { color:#8c2848; }
+html[data-skin="haman"] .freshness-banner .freshness-head span, html[data-skin="haman"] .freshness-banner .freshness-reason { color:#725465; }
+html[data-skin="haman"] .price-box.current.stale > span:first-child, html[data-skin="haman"] .stale-tag { color:#8b5610; }
+html[data-skin="haman"] .old-rule-tag { color:#616277; }
+html[data-skin="haman"] .page-atmosphere-hangar { opacity:.17; }
+html[data-skin="haman"] .page-atmosphere > img { opacity:.07; }
+html[data-skin="haman"] .model-card::after { opacity:.08; }
+html[data-skin="haman"] .status, html[data-skin="haman"] .badge { color:#316247; background:#e1eee5; }
+html[data-skin="haman"] .status.failed, html[data-skin="haman"] .status.error { color:#9b2445; background:#f8dfe7; }
+html[data-skin="haman"] .status.partial, html[data-skin="haman"] .status.running, html[data-skin="haman"] .badge.warn { color:#88510a; background:#fff0cf; }
+html[data-skin="haman"] .freshness-banner.error, html[data-skin="haman"] #searchProgress { background:#f9e5e9; color:#792442; }
+.appearance-bar { display:flex; flex-wrap:wrap; align-items:center; gap:14px 24px; padding:18px 22px; margin-bottom:22px; border:1px solid var(--line); background:var(--panel); }
+.appearance-bar label { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--paper); }
+.appearance-bar select { width:auto; min-width:150px; padding:10px 12px; }
+.appearance-bar small { display:block; flex-basis:100%; color:var(--muted); }
+.theme-gallery { display:grid; grid-template-columns:1fr; gap:26px; }
+.skin-family { background:#11161d; border:1px solid #35404d; padding:22px; color:#e8edf4; }
+.skin-family-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.skin-family-heading small { font:10px Consolas,monospace; letter-spacing:.14em; color:#9baabd; }
+.skin-family-heading h3 { font-size:24px; color:#edf1f6 !important; margin:8px 0; }
+.skin-family-heading p { font-size:12px; color:#bac5d4; margin:0; }
+.skin-swatches { display:flex; gap:7px; }
+.skin-swatches i { width:25px; height:25px; border:1px solid #ffffff40; border-radius:50%; }
+.skin-versions { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.skin-scene { position:relative; aspect-ratio:3/1; overflow:hidden; background-size:cover; background-position:center; }
+.skin-scene img { position:absolute; height:98%; width:28%; object-fit:contain; object-position:right bottom; right:1%; bottom:0; }
+.skin-version-footer { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding-top:12px; font-size:12px; }
+.skin-version-footer b { margin-right:auto; color:#e8edf4; }
+.skin-version-footer button { background:#e4edf5; color:#17202c; border:0; border-radius:3px; padding:8px 12px; font-size:12px; }
+.skin-version-footer a { color:#b7c9df; text-underline-offset:3px; }
+@media(min-width:2200px){.theme-gallery{grid-template-columns:1fr 1fr}.skin-versions{grid-template-columns:1fr}}
+
+/* Preserve selected images' full framing and keep character overlays clear of the machines. */
+html[data-skin] .hangar-stage { aspect-ratio:var(--skin-hangar-ratio,3 / 1); }
+html[data-skin="zaku"][data-hangar="a"] .secretary-visual,
+html[data-skin="haman"][data-hangar="a"] .secretary-visual,
+html[data-skin="murasame"][data-hangar="a"] .secretary-visual { left:1%; right:auto; }
+html[data-skin="zaku"][data-hangar="a"] .hangar-stage .hero-serial,
+html[data-skin="haman"][data-hangar="a"] .hangar-stage .hero-serial,
+html[data-skin="murasame"][data-hangar="a"] .hangar-stage .hero-serial { left:32%; top:18px; }
+.skin-family[data-family="zaku"] .skin-version:first-child .skin-scene img,
+.skin-family[data-family="haman"] .skin-version:first-child .skin-scene img,
+.skin-family[data-family="murasame"] .skin-version:first-child .skin-scene img { left:1%; right:auto; }
+
+html[data-skin][data-hangar="a"] .hangar-stage .command-sigil { display:none; }
+:root { --skin-hangar: url('/static/assets/terminal.svg'); }

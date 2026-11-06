@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920">
+  <title>赤色彗星 · HGUC 补给战情室</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles-zeon.css?v=final-20260916">
+  <link rel="stylesheet" href="/static/styles-hangar.css?v=msrp-fx-20261017">
+  <link rel="stylesheet" href="/static/themes.css?v=opensource-1">
+</head>
+<body>
+  <div class="page-atmosphere" aria-hidden="true">
+    <div class="page-atmosphere-hangar"></div>
+    <img src="/static/assets/radar.svg" width="96" height="144" alt="">
+  </div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><i></i></div>
+        <div><strong>RED COMET WATCH</strong><span>COMMANDER'S PROCUREMENT DECK</span></div>
+      </div>
+      <div class="unit-stamp"><b>CC-03</b><span>总帅专用补给情报终端</span></div>
+      <nav>
+        <button class="nav-item active" data-view="watch"><span>01</span><b>关注中</b><small>ACTIVE TARGETS</small></button>
+        <button class="nav-item" data-view="purchased"><span>02</span><b>已购入</b><small>SECURED UNITS</small></button>
+        <button class="nav-item" data-view="runs"><span>03</span><b>运行记录</b><small>SCAN LOG</small></button>
+        <button class="nav-item" data-view="settings"><span>04</span><b>自动任务</b><small>SCHEDULE</small></button>
+        <button class="nav-item" data-view="blocked"><span>05</span><b>已屏蔽</b><small>HIDDEN ITEMS</small></button>
+        <button class="nav-item" data-view="themes"><span>06</span><b>外观皮肤</b><small>THEME GALLERY</small></button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="dot" id="sideDot"></span>
+        <div><strong id="sideStatus">尚未检查</strong><span id="sideTime">等待首次运行</span></div>
+      </div>
+      <div class="sidebar-code">UC // 0079—0096<br>LOCAL NODE : ZHUHAI</div>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">RED COMET PROCUREMENT NETWORK // COMMAND NODE 03</p>
+          <h1 id="pageTitle">我的关注</h1>
+          <p id="pageSubtitle">只统计全新未拼、非预售商品，最低价包含已确认运费。</p>
+        </div>
+        <div class="header-actions">
+          <button class="button secondary" id="loginButton"><span>AUTH</span> 闲鱼登录</button>
+          <button class="button secondary" id="pddLoginButton"><span>PDD</span> 拼多多登录</button>
+          <button class="button secondary" id="addButton"><span>ADD</span> 新增关注</button>
+          <select id="searchPlatform" aria-label="搜索平台"><option value="all">闲鱼 + 拼多多</option><option value="xianyu">只搜闲鱼</option><option value="pdd">只搜拼多多</option></select>
+          <button class="button primary" id="runButton"><span>SCAN</span> 搜索全部关注</button>
+        </div>
+      </header>
+
+      <div id="connectionBanner" class="freshness-banner error" hidden role="status">
+        <div class="freshness-head"><b>网站后台未连接，暂时无法搜索</b></div>
+        <p>请双击桌面的“赤色彗星补给战情室”启动后台，再回到此页面。电脑重启后，单独打开 Chrome 收藏夹里的链接不会启动后台。</p>
+        <button class="button secondary" id="reconnectButton" type="button">重新连接</button>
+      </div>
+
+      <p id="searchProgress" class="search-help" hidden role="status" aria-live="polite"></p>
+
+      <section id="watchView" class="view active">
+        <div class="command-hero">
+          <div class="hangar-stage">
+            <div class="command-sigil" aria-hidden="true"><i></i><b></b></div>
+            <div class="secretary-visual" aria-hidden="true">
+              <img src="/static/assets/radar.svg" width="96" height="144" decoding="async" alt="">
+            </div>
+            <div class="hero-serial">NEO ZEON // FLAGSHIP HANGAR<br><b>SAZABI / NIGHTINGALE</b></div>
+          </div>
+          <div class="command-briefing-row">
+            <div class="hero-copy">
+              <div class="hero-tag"><i></i> COMMAND CHANNEL ESTABLISHED</div>
+              <h2>赤色彗星<br><em>补给战情室</em></h2>
+              <div class="secretary-briefing">
+                <span>CHIEF ADJUTANT // WEEKLY BRIEFING</span>
+                <p id="secretaryMessage">总帅大人，秘书例会正在为您整理本周补给战情。</p>
+              </div>
+            </div>
+            <div class="metrics">
+              <article><span>ACTIVE TARGETS</span><strong id="activeCount">—</strong><small>当前持续追踪型号</small></article>
+              <article><span>JPY / CNY</span><strong id="fxRate">—</strong><small id="fxDate">等待首次更新</small></article>
+              <article><span>AUTO SORTIE</span><strong id="taskState">—</strong><small>周一 03:00 搜索 · 08:00 开页</small></article>
+            </div>
+          </div>
+        </div>
+        <div id="freshnessBanner" class="freshness-banner"></div>
+        <div id="marketplaceStatus" class="marketplace-status"></div>
+        <p class="search-help">选择搜索平台，再点“搜索全部关注”，查询关注型号的新报价。新增型号请先点“新增关注”。搜索时请保留自动打开的采集窗口，完成后页面会更新。</p>
+        <div class="section-title"><div><span>WATCH LIST</span><h2>作战目标</h2></div><p>PRICE ASCENDING // SHIPPING INCLUDED</p></div>
+        <div id="watchGrid" class="cards"></div>
+      </section>
+
+      <section id="purchasedView" class="view">
+        <div class="section-title"><div><span>ARCHIVE</span><h2>已完成采购</h2></div><p>TRACKING SUSPENDED</p></div>
+        <div id="purchasedGrid" class="cards"></div>
+      </section>
+
+      <section id="themesView" class="view">
+        <div class="appearance-bar">
+          <label>主题<select id="skinSelect" aria-label="主题"></select></label>
+          <button class="button secondary" type="button" id="resetSkin">恢复赤色彗星</button>
+          <small id="skinStatus" role="status" aria-live="polite"></small>
+        </div>
+        <p class="search-help">切换配色后，当前浏览器会记住你的选择。</p>
+        <div class="theme-gallery" id="themeGallery"></div>
+      </section>
+
+      <section id="runsView" class="view">
+        <div class="panel">
+          <div class="panel-title"><div><small>SCAN LOG</small><h2>最近运行</h2></div><span>价格历史从首次成功运行开始</span></div>
+          <div id="runsTable"></div>
+        </div>
+      </section>
+
+      <section id="blockedView" class="view">
+        <div class="panel">
+          <div class="panel-title"><div><small>HIDDEN ITEMS</small><h2>已删除并屏蔽的商品</h2></div><span id="blockedCount">0 件</span></div>
+          <p class="search-help">同一商品在不同链接和后续搜索中都会被排除。误删时点击“恢复显示”，允许它再次显示，之后搜索也会正常收录。</p>
+          <div id="blockedList"></div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="settings-layout">
+          <form id="settingsForm" class="panel settings-form">
+            <div class="panel-title"><div><small>LOCAL AUTOMATION</small><h2>周一自动任务</h2></div><span>由 Windows 本地运行，不依赖 Codex</span></div>
+            <div class="form-grid">
+              <label><span>执行星期</span><select name="scan_weekday"><option value="MON">周一</option><option value="TUE">周二</option><option value="WED">周三</option><option value="THU">周四</option><option value="FRI">周五</option><option value="SAT">周六</option><option value="SUN">周日</option></select></label>
+              <label><span>自动搜索时间</span><input name="scan_time" type="time" required></label>
+              <label><span>自动打开网页</span><input name="dashboard_time" type="time" required></label>
+              <label><span>目的省份（选填）</span><input name="destination_province"></label>
+              <label><span>目的城市（选填）</span><input name="destination_city"></label>
+              <label><span>每款读取上限</span><input name="max_results" type="number" min="5" max="80"></label>
+              <label><span>详情核验数量</span><input name="detail_checks" type="number" min="1" max="50"></label>
+              <label class="toggle-line wide"><input name="headless" type="checkbox"><span>使用无头浏览器（闲鱼通常会拒绝，不建议开启）</span></label>
+            </div>
+            <div class="form-actions">
+              <button class="button primary" type="submit">保存设置</button>
+              <button class="button secondary" type="button" id="scheduleButton">部署周一双任务</button>
+            </div>
+          </form>
+          <aside class="panel note-panel">
+            <span class="warning-label">FIELD NOTE // 01</span>
+            <h3>运费计算说明</h3>
+            <p>“非偏远包邮”按非偏远地区估算。其他商品读取平台针对当前账号地址展示的运费；运费不明时标记“待确认”。</p>
+            <span class="warning-label">FIELD NOTE // 02</span>
+            <h3>本地自动运行</h3>
+            <p>03:00 搜索，08:00 启动战情室并打开浏览器。Codex 无需登录或保持开启；Windows 用户需要处于登录状态，电脑需要开机联网。</p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <aside class="spouse-meter calm" id="spouseMeter" aria-label="顶头上司本月怒气值">
+      <div class="spouse-header"><span>COMMAND REVIEW</span><b>顶头上司</b></div>
+      <div class="wife-face" aria-hidden="true"><i></i><i></i><b></b></div>
+      <div class="anger-track">
+        <div class="anger-fill" id="angerFill"></div>
+        <span class="threshold threshold-500">500</span>
+        <span class="threshold threshold-300">300</span>
+      </div>
+      <strong id="spouseMood">心情稳定</strong>
+      <b id="monthPurchaseTotal">¥0</b>
+      <small id="monthPurchaseCount">本月 0 架</small>
+    </aside>
+  </div>
+
+  <dialog id="itemDialog">
+    <form id="itemForm" method="dialog">
+      <input type="hidden" name="id">
+      <div class="dialog-head"><div><p class="eyebrow">TARGET REGISTRATION</p><h2 id="itemDialogTitle">新增关注</h2></div><button type="button" class="icon-button close-dialog">×</button></div>
+      <div class="form-grid">
+        <label><span>显示名称</span><input name="name" required placeholder="例如：The-O"></label>
+        <label><span>型号编号</span><input name="model_code" placeholder="HGUC 036 / PMX-003"></label>
+        <label class="wide"><span>闲鱼搜索词</span><input name="search_query" required placeholder="HGUC 铁奥 万代"></label>
+        <label class="wide"><span>型号别名（每行一个）</span><textarea name="aliases" rows="5" placeholder="铁奥&#10;THE-O&#10;PMX-003"></textarea></label>
+        <label><span>日元含税发售价</span><input name="msrp_jpy" type="number" min="0" placeholder="留空时匹配已核实型号"></label>
+        <label><span>万代官方链接</span><input name="official_url" type="url"></label>
+      </div>
+      <div class="form-actions"><button type="button" class="button secondary close-dialog">取消</button><button type="submit" class="button primary">保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="purchaseDialog" class="purchase-dialog">
+    <form id="purchaseForm">
+      <input type="hidden" name="item_id">
+      <div class="dialog-head">
+        <div><p class="eyebrow">UNIT ACQUISITION</p><h2>确认采购入库</h2></div>
+        <button type="button" class="icon-button close-purchase-dialog">×</button>
+      </div>
+      <div class="purchase-target">
+        <span>本次入库机体</span>
+        <strong id="purchaseItemName">—</strong>
+        <small>入库后将停止每周追踪；实际成交总价会计入顶头上司的本月怒气值。</small>
+      </div>
+      <label>
+        <span>实际成交总价（含运费 / 人民币）</span>
+        <div class="money-input"><b>¥</b><input name="price_cny" type="number" min="0" max="1000000" step="0.01" required inputmode="decimal"></div>
+        <small id="purchasePriceHint">已自动带入当前最低含运费价格，你可以按真实成交价修改。</small>
+      </label>
+      <div class="form-actions">
+        <button type="button" class="button secondary close-purchase-dialog">取消</button>
+        <button type="submit" class="button primary">确认入库</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/themes.js?v=opensource-1"></script>
+  <script src="/static/app.js?v=1.2.0"></script>
+</body>
+</html>
