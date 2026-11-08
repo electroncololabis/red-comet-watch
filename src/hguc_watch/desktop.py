@@ -158,7 +158,12 @@ def prepare_uninstall(purge: bool) -> None:
 
     stop()
     if DATA_DIR.exists():
-        locks = (RUN_LOCK_PATH, DATA_DIR / "launch.lock", DATA_DIR / "server.lock", *LOGIN_LOCK_PATHS)
+        locks = (
+            RUN_LOCK_PATH, DATA_DIR / "launch.lock", DATA_DIR / "server.lock",
+            *LOGIN_LOCK_PATHS,
+            Path(str(BROWSER_PROFILE_DIR) + '.lock'),
+            Path(str(PDD_BROWSER_PROFILE_DIR) + '.lock'),
+        )
         with ExitStack() as held:
             for path in locks:
                 held.enter_context(FileLock(str(path), timeout=0))

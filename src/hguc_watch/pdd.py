@@ -6,10 +6,10 @@ import re
 from datetime import datetime
 from urllib.parse import quote, urlsplit, parse_qs
 
-from playwright.async_api import async_playwright
+from .browser import launch_profile, navigate, close_browser
 from playwright.async_api import Error as PlaywrightError
 
-from .config import LOGIN_LOCK_PATHS, PDD_BROWSER_PROFILE_DIR
+from .config import LOGIN_LOCK_PATHS, PDD_BROWSER_PROFILE_DIR, DATA_DIR
 from .xianyu import _installed_browser
 from .xianyu import LoginRequiredError, VerificationRequiredError, SearchParseError, EmptyResultError, NetworkError
 from .xianyu import ListingBatch, XianyuError, PlatformBusyError
@@ -33,14 +33,35 @@ async def _wait_page(page, *, search: bool):
             raise PlatformBusyError('拼多多提示系统繁忙，请稍后再试；已停止继续访问')
         if any(word in text for word in ('安全验证', '滑动验证', '请完成验证', '访问验证')):
             raise VerificationRequiredError('拼多多需要本人完成安全验证')
-        if search and await page.locator(CARD_SELECTOR).count():
+        if search and await _cards(page):
             return
         if not search and await page.locator('.tLYIg_Ju').count() and '¥' in text:
             return
         if any(word in text for word in ('没有找到相关', '暂无相关商品')):
             raise EmptyResultError('拼多多这个关键词没有结果')
         await page.wait_for_timeout(750)
-    raise SearchParseError('拼多多页面未加载出可识别的商品；本次不写入报价')
+    evidence = await _page_evidence(page)
+    raise SearchParseError('拼多多页面未加载出可识别的商品；本次不写入报价', evidence=evidence)
+
+
+async def _page_evidence(page):
+    """Save counts, never page contents, account identifiers or URL query strings."""
+    url = urlsplit(page.url)
+    counts = await page.evaluate('''() => ({
+        links:document.querySelectorAll('a[href*="goods_id="]').length,
+        legacyCards:document.querySelectorAll('._3glhOBhU').length,
+        hasPrice:/[¥￥]\\s*\\d/.test(document.body?.innerText || ''),
+        textLength:(document.body?.innerText || '').length
+    })''')
+    report = dict(host=url.hostname, path=url.path, **counts)
+    evidence = json.dumps(report, ensure_ascii=False)
+    try:
+        destination = DATA_DIR/'diagnostics'
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination/'pdd-last-parse-failure.json').write_text(evidence, encoding='utf-8')
+    except OSError:
+        pass
+    return evidence
 
 
 async def _cards(page):
@@ -52,6 +73,27 @@ async def _cards(page):
     }))''')
     for row in rows:
         row['title'] = _clean(row['title'])
+    if not rows:
+        rows = await page.evaluate('''() => {
+            const seen = new Set(), rows = [];
+            for (const anchor of document.querySelectorAll('a[href*="goods_id="]')) {
+                const url = new URL(anchor.href, location.href);
+                const id = url.searchParams.get('goods_id');
+                if (!/^\\d+$/.test(id || '') || !url.hostname.endsWith('.yangkeduo.com') || seen.has(id)) continue;
+                let card = anchor;
+                for (let i=0; i<3 && card; i++, card=card.parentElement) {
+                    const text = (card.innerText || '').trim();
+                    if (text.length>800) break;
+                    if (/[¥￥]\\s*\\d/.test(text) && card.querySelector('img')) {
+                        const title = card.querySelector('[title]')?.getAttribute('title') || card.querySelector('img')?.alt || text.split('\\n').find(t=>t.length>4 && !/[¥￥]/.test(t)) || '';
+                        if (!title) break;
+                        rows.push({href:url.href,title,text,price_text:text,image:card.querySelector('img')?.src || ''});
+                        seen.add(id); break;
+                    }
+                }
+            }
+            return rows;
+        }''')
     return rows
 
 
@@ -79,12 +121,15 @@ async def _detail(page, card):
     if not match:
         raise SearchParseError('返回搜索页后未能定位原商品，跳过该条以避免错配')
     card.update(match)
-    target = page.locator(CARD_SELECTOR).nth(match['index'])
-    title_node = target.locator(TITLE_SELECTOR)
-    if await title_node.count():
-        await title_node.click(position={'x':4,'y':4}, timeout=10000)
+    if match.get('href'):
+        await navigate(page, match['href'])
     else:
-        await target.click(position={'x':4,'y':4}, timeout=10000)
+        target = page.locator(CARD_SELECTOR).nth(match['index'])
+        title_node = target.locator(TITLE_SELECTOR)
+        if await title_node.count():
+            await title_node.click(position={'x':4,'y':4}, timeout=10000)
+        else:
+            await target.click(position={'x':4,'y':4}, timeout=10000)
     try:
         await _wait_page(page, search=False)
         for _ in range(8):
@@ -191,8 +236,10 @@ async def _scrape_query(context, item: dict, query: str, *, max_results: int, de
     try:
         await page.bring_to_front()
         try:
-            await page.goto(search_url(query), wait_until='domcontentloaded', timeout=60000)
-        except Exception as exc:
+            await navigate(page, search_url(query), timeout=60000)
+        except PlaywrightError as exc:
+            if 'has been closed' in str(exc).lower():
+                raise
             raise NetworkError(f'拼多多搜索页打开失败：{type(exc).__name__}') from exc
         await _wait_page(page, search=True)
         for _ in range(2):
@@ -239,7 +286,6 @@ def search_url(query: str) -> str:
 
 
 async def launch_context(headless: bool = False):
-    driver = await async_playwright().start()
     browser = _installed_browser()
     kwargs = {'headless': headless, 'chromium_sandbox': True, 'locale': 'zh-CN', 'timezone_id': 'Asia/Shanghai',
               'viewport': {'width': 480, 'height': 960}}
@@ -247,12 +293,7 @@ async def launch_context(headless: bool = False):
         kwargs['executable_path'] = browser.executable_path
     else:
         kwargs['channel'] = browser.channel
-    try:
-        context = await driver.chromium.launch_persistent_context(str(PDD_BROWSER_PROFILE_DIR), **kwargs)
-    except Exception:
-        await driver.stop()
-        raise
-    return driver, context
+    return await launch_profile(PDD_BROWSER_PROFILE_DIR, **kwargs)
 
 
 async def open_login_window(timeout_minutes: int = 10):
@@ -285,8 +326,7 @@ async def open_login_window(timeout_minutes: int = 10):
                 raise
         print('登录等待结束，可稍后从面板重新打开。', flush=True)
     finally:
-        await context.close()
-        await driver.stop()
+        await close_browser(context, driver)
 
 
 if __name__ == '__main__':

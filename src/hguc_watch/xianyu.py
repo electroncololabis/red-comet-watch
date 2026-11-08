@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urljoin, urlparse, parse_qs
 
-from playwright.async_api import BrowserContext, Page, async_playwright
+from playwright.async_api import BrowserContext, Page, Error as PlaywrightError
+from .browser import launch_profile, navigate, close_browser
+from .search_response import SearchResponses
 
 from .config import BROWSER_PROFILE_DIR, ensure_data_dirs
 from .filtering import (
@@ -29,7 +31,7 @@ from .filtering import (
 class XianyuError(RuntimeError):
     """抓取失败的基类。
 
-    `cause` 是**机器可读**的失败分类，用来区分
+    `cause` 是**机器可读**的失败分类。HANDOFF-2 的验收标准要求
     「登录墙 / 风控页 / 真的没结果 / 解析器坏了」四种情况在运行记录里必须能区分，
     所以每一种都有自己的 cause 值，写进 runs.error 时带上，不要都塞进
     "页面结构可能已经变化" 这一句里。
@@ -176,10 +178,8 @@ def _installed_browser() -> BrowserLaunch:
 
 async def launch_context(headless: bool) -> tuple[Any, BrowserContext]:
     ensure_data_dirs()
-    playwright = await async_playwright().start()
     browser = _installed_browser()
     kwargs: dict[str, Any] = {
-        "user_data_dir": str(BROWSER_PROFILE_DIR),
         "headless": headless,
         "chromium_sandbox": True,
         "locale": "zh-CN",
@@ -191,12 +191,7 @@ async def launch_context(headless: bool) -> tuple[Any, BrowserContext]:
         kwargs["executable_path"] = browser.executable_path
     elif browser.channel:
         kwargs["channel"] = browser.channel
-    try:
-        context = await playwright.chromium.launch_persistent_context(**kwargs)
-    except Exception:
-        await playwright.stop()
-        raise
-    return playwright, context
+    return await launch_profile(BROWSER_PROFILE_DIR, **kwargs)
 
 
 async def open_login_window(timeout_minutes: int = 10) -> None:
@@ -224,8 +219,7 @@ async def open_login_window(timeout_minutes: int = 10) -> None:
             await asyncio.sleep(2)
         raise LoginRequiredError("等待闲鱼登录超时，请重新打开登录窗口")
     finally:
-        await context.close()
-        await playwright.stop()
+        await close_browser(context, playwright)
 
 
 def search_url(query: str) -> str:
@@ -354,6 +348,7 @@ async def _extract_cards(page: Page) -> list[dict[str, Any]]:
 
 # 详情页里"猜你喜欢 / 推荐位"的容器特征。这些区域会把**别的商品**的成色、
 # 包邮、型号文字混进来，必须先从文本里摘掉再参与判定。
+# （HANDOFF 第 7 节 B：整页 inner_text 会污染型号/成色/包邮判断。）
 _DETAIL_STRIP_SELECTORS = (
     '[class*="feeds"]',
     '[class*="Feeds"]',
@@ -417,20 +412,25 @@ async def _load_detail(context: BrowserContext, url: str) -> tuple[str, str, str
     page = await context.new_page()
     try:
         await page.bring_to_front()
-        await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
-        await page.wait_for_timeout(1800)
-        try:
-            text = await page.evaluate(
-                _JS_ITEM_DETAIL_TEXT,
-                [list(_DETAIL_STRIP_SELECTORS), list(_DETAIL_MAIN_SELECTORS), 4000],
-            )
-        except Exception as exc:  # noqa: BLE001
-            return "", page.url, f"详情正文提取失败：{exc}"
-        if not text:
-            return "", url, "商品详情尚未加载或需要登录，保留搜索卡片证据"
-        return text, page.url, ""
-    except Exception as exc:  # noqa: BLE001
-        return "", url, f"详情页打开失败：{exc}"
+        await navigate(page, url)
+        for _ in range(20):
+            diagnostics = await _read_search_diagnostics(page)
+            body = diagnostics.get('body', '')
+            if _first_marker(body, VERIFICATION_MARKERS):
+                return '', page.url, VerificationRequiredError('详情页需要本人完成验证')
+            if 'login' in urlparse(page.url).path or _first_marker(body, LOGIN_MARKERS):
+                return '', page.url, LoginRequiredError('详情页需要重新登录')
+            text = await page.evaluate(_JS_ITEM_DETAIL_TEXT,
+                [list(_DETAIL_STRIP_SELECTORS), list(_DETAIL_MAIN_SELECTORS), 4000])
+            if text.strip():
+                return text, page.url, ''
+            await page.wait_for_timeout(500)
+        return '', url, SearchParseError('详情正文未加载，保留卡片报价但标记为待核实')
+    except PlaywrightError as exc:
+        if 'has been closed' in str(exc).lower():
+            raise
+        return '', url, NetworkError('详情页读取失败', evidence=type(exc).__name__)
+
     finally:
         await page.close()
 
@@ -604,7 +604,9 @@ def _classify_search_failure(
 ) -> XianyuError:
     """把一次"没有可用卡片"的搜索结果分成**可区分**的失败原因。
 
-    分别标记登录、风控、没有结果和页面结构变化。
+    这是 HANDOFF-2 接手顺序第 5 条的核心：以前无论哪种情况都会落到
+    「页面结构可能已经变化」这一句，导致无法判断到底该修登录、修风控，
+    还是真的改了 DOM。
     """
     body = diagnostics.get("body", "") or ""
     counts = diagnostics.get("counts", {}) or {}
@@ -674,12 +676,16 @@ async def scrape_watch_item(
     search_errors = []
     for query in queries:
         try:
-            cards.extend(await _search_cards(context, query, max_results))
+            batch = await _search_cards(context, query, max_results)
+            cards.extend(batch)
+            search_errors.extend(getattr(batch, 'errors', []))
+            if any(isinstance(e, (LoginRequiredError, VerificationRequiredError, IllegalAccessError, PlatformBusyError)) for e in search_errors):
+                break
         except EmptyResultError:
             continue
         except XianyuError as exc:
             search_errors.append(exc)
-            if isinstance(exc, (LoginRequiredError, VerificationRequiredError, IllegalAccessError)):
+            if isinstance(exc, (LoginRequiredError, VerificationRequiredError, IllegalAccessError, PlatformBusyError)):
                 break
         if query != queries[-1]:
             await asyncio.sleep(2.5)
@@ -699,7 +705,7 @@ async def scrape_watch_item(
     # Keep relevant kits before inexpensive spare parts when applying the cap.
     candidates.sort(key=lambda c: not needs_detail(build_listing(c, '', aliases, expected_grade=grade, expected_edition=edition)))
     candidates = candidates[:max_results]
-    remaining = 0 if any(isinstance(e, (LoginRequiredError, VerificationRequiredError, IllegalAccessError)) for e in search_errors) else detail_checks
+    remaining = 0 if any(isinstance(e, (LoginRequiredError, VerificationRequiredError, IllegalAccessError, PlatformBusyError)) for e in search_errors) else detail_checks
     results = []
     for card in candidates:
         listing = build_listing(card, '', aliases, expected_grade=grade, expected_edition=edition)
@@ -708,6 +714,13 @@ async def scrape_watch_item(
             remaining -= 1
             if not error:
                 listing = build_listing(card, detail, aliases, resolved_url, expected_grade=grade, expected_edition=edition)
+            else:
+                failure = error if isinstance(error, XianyuError) else SearchParseError(str(error))
+                search_errors.append(failure)
+                listing.update(eligible=False, condition_status='详情待核实', reject_reason='详情读取失败，卡片报价尚未核实')
+                if isinstance(failure, (LoginRequiredError, VerificationRequiredError, IllegalAccessError, PlatformBusyError)):
+                    results.append(listing)
+                    break
             await asyncio.sleep(random.uniform(1.0, 2.2))
         if listing:
             results.append(listing)
@@ -734,51 +747,69 @@ def search_queries(item: dict[str, Any]) -> list[str]:
 
 async def _search_cards(context: BrowserContext, query: str, max_results: int) -> list[dict[str, Any]]:
     page = await context.new_page()
+    responses = SearchResponses(page, query)
     try:
         await page.bring_to_front()
         try:
-            await page.goto(
-                search_url(query), wait_until="domcontentloaded", timeout=60_000
-            )
-        except Exception as exc:  # noqa: BLE001
+            await navigate(page, search_url(query), timeout=60_000)
+        except PlaywrightError as exc:
+            if 'has been closed' in str(exc).lower():
+                raise
             raise NetworkError(f"打开搜索页失败：{exc}", evidence=f"query={query}") from exc
 
-        await page.wait_for_timeout(3500)
-        for _ in range(3):
-            await page.mouse.wheel(0, 900)
-            await page.wait_for_timeout(650)
-        try:
-            await page.wait_for_function(
-                r"""
-                () => [...document.querySelectorAll('a[href]')].some(a =>
-                  /\/item|item\?|item\//i.test(a.getAttribute('href') || '') &&
-                  /[¥￥]\s*\d/.test(a.innerText || '')
+        payload = await responses.wait(1, timeout=3)
+        if payload is not None and payload.failure != 'parse_failed':
+            if payload.failure:
+                raise _response_error(payload.failure)
+            cards = payload.cards
+            if not cards:
+                raise EmptyResultError('搜索响应确认没有商品')
+        else:
+            await page.wait_for_timeout(3500)
+            for _ in range(3):
+                await page.mouse.wheel(0, 900)
+                await page.wait_for_timeout(650)
+            try:
+                await page.wait_for_function(
+                    r"""
+                    () => [...document.querySelectorAll('a[href]')].some(a =>
+                      /\/item|item\?|item\//i.test(a.getAttribute('href') || '') &&
+                      /[¥￥]\s*\d/.test(a.innerText || '')
+                    )
+                    """,
+                    timeout=15_000,
                 )
-                """,
-                timeout=15_000,
-            )
-        except Exception:
-            # 下面会给出更具体的失败原因（登录/验证/空结果/DOM）。
-            pass
+            except Exception:
+                # 下面会给出更具体的失败原因（登录/验证/空结果/DOM）。
+                pass
 
-        authenticated = await _has_authenticated_session(context)
+            authenticated = await _has_authenticated_session(context)
 
-        # 先取卡片，再判失败。顺序很重要：只要页面上真有卡片，就不该报登录墙。
-        cards = await _extract_cards(page)
-        # Some search pages initially contain only a loading skeleton. Poll the
-        # DOM without refreshing or repeating network requests.
-        for _ in range(10):
-            if any(_card_price(card) is not None for card in cards):
-                break
-            diagnostics = await _read_search_diagnostics(page)
-            failure = _classify_search_failure(diagnostics, authenticated, query)
-            if isinstance(failure, (IllegalAccessError, VerificationRequiredError)) or _first_marker(diagnostics['body'], LOGIN_MARKERS):
-                raise failure
-            await page.wait_for_timeout(1500)
+            # 先取卡片，再判失败。顺序很重要：只要页面上真有卡片，就不该报登录墙。
             cards = await _extract_cards(page)
-        if not cards:
-            diagnostics = await _read_search_diagnostics(page)
-            raise _classify_search_failure(diagnostics, authenticated, query)
+            # Some search pages initially contain only a loading skeleton. Poll the
+            # DOM without refreshing or repeating network requests.
+            for _ in range(10):
+                if any(_card_price(card) is not None for card in cards):
+                    break
+                diagnostics = await _read_search_diagnostics(page)
+                failure = _classify_search_failure(diagnostics, authenticated, query)
+                if isinstance(failure, (IllegalAccessError, VerificationRequiredError)) or _first_marker(diagnostics['body'], LOGIN_MARKERS):
+                    raise failure
+                await page.wait_for_timeout(1500)
+                cards = await _extract_cards(page)
+            if not cards:
+                diagnostics = await _read_search_diagnostics(page)
+                raise _classify_search_failure(diagnostics, authenticated, query)
+
+        # A slow response may arrive while the DOM fallback is loading.
+        late_payload = await responses.wait(1, timeout=0)
+        if late_payload is not None:
+            payload = late_payload
+            if payload.failure and payload.failure != 'parse_failed':
+                raise _response_error(payload.failure)
+            if not payload.failure:
+                cards.extend(payload.cards)
 
         unique_cards: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -795,6 +826,60 @@ async def _search_cards(context: BrowserContext, query: str, max_results: int) -
                 "找到了商品链接，但卡片上没有可解析的价格（价格可能还没加载完）。"
             )
 
-        return unique_cards
+        errors = []
+        if payload is not None and not payload.failure:
+            for number in range(2, 4):
+                if await _login_overlay(page):
+                    errors.append(LoginRequiredError('登录弹窗阻挡后续搜索，请重新登录；已保留首屏结果'))
+                    break
+                button = page.locator('button[class*="search-pagination-arrow-container"]:has([class*="search-pagination-arrow-right"]):not([disabled])').first
+                try:
+                    await button.wait_for(state='attached', timeout=3000)
+                except PlaywrightError:
+                    pass
+                if not await button.count():
+                    break
+                try:
+                    await button.click(timeout=10000)
+                    following = await responses.wait(number, timeout=15)
+                    if following is None:
+                        errors.append(NetworkError('翻页响应未确认，已保留前页结果；未重复点击以免跳页'))
+                        break
+                    if following.failure:
+                        errors.append(_response_error(following.failure))
+                        break
+                    if not following.cards:
+                        break
+                    new = [c for c in following.cards if _item_key(c['href']) not in seen]
+                    if not new:
+                        errors.append(SearchParseError('翻页没有返回新商品，已停止重复读取'))
+                        break
+                    unique_cards.extend(new)
+                    seen.update(_item_key(c['href']) for c in new)
+                    await asyncio.sleep(2.5)
+                except PlaywrightError as exc:
+                    if 'has been closed' in str(exc).lower():
+                        raise
+                    if await _login_overlay(page):
+                        errors.append(LoginRequiredError('登录弹窗阻挡翻页，请重新登录；已保留前页结果'))
+                    else:
+                        errors.append(NetworkError('翻页失败，保留已读取商品', evidence=type(exc).__name__))
+                    break
+        return ListingBatch(unique_cards, errors)
     finally:
+        await responses.close()
         await page.close()
+
+
+async def _login_overlay(page):
+    return await page.locator('iframe#alibaba-login-box, [class*="login-modal-wrap"]').first.is_visible()
+
+
+def _response_error(cause):
+    errors = {
+        'login_required': LoginRequiredError,
+        'verification_required': VerificationRequiredError,
+        'service_busy': PlatformBusyError,
+        'network': NetworkError,
+    }
+    return errors.get(cause, SearchParseError)('搜索响应未成功，保留已有结果', evidence=cause)

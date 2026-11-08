@@ -8,6 +8,7 @@ from filelock import FileLock, Timeout
 from playwright.async_api import Error as PlaywrightError
 
 from .config import RUN_LOCK_PATH, ensure_data_dirs
+from .browser import BrowserBusyError, close_browser
 from .db import (
     add_listings,
     backfill_reference_prices,
@@ -63,6 +64,13 @@ async def run_tracking(*, platforms: tuple[str, ...] = ('xianyu', 'pdd')) -> Tra
     except Timeout as exc:
         raise RuntimeError("已有一次价格检查正在运行，请稍后再试") from exc
 
+    try:
+        return await _run_tracking(platforms)
+    finally:
+        lock.release()
+
+
+async def _run_tracking(platforms):
     run_id = create_run()
     fx: FxRate | None = None
     errors: list[str] = []
@@ -90,8 +98,10 @@ async def run_tracking(*, platforms: tuple[str, ...] = ('xianyu', 'pdd')) -> Tra
             _tracking_progress.update(platform_label=label, item_name='', item_index=0)
             platform_errors = []
             platform_count = 0
+            phase = 'browser_launch'
             try:
                 playwright, context = await launcher(headless=headless)
+                phase = 'collection'
                 blocked_keys = get_blocked_item_keys(platform)
                 for item_index, item in enumerate(items, start=1):
                     _tracking_progress.update(item_name=item['name'], item_index=item_index)
@@ -126,16 +136,21 @@ async def run_tracking(*, platforms: tuple[str, ...] = ('xianyu', 'pdd')) -> Tra
                         causes.append('unexpected')
                         platform_errors.append(f"{label} / {item['name']}：[unexpected] {exc}")
                     await asyncio.sleep(2.5)
+            except BrowserBusyError as exc:
+                causes.append('browser_busy')
+                platform_errors.append(f'{label}：[browser_busy] {exc}')
             except Exception as exc:
-                causes.append('browser_launch')
-                platform_errors.append(f'{label}：浏览器启动失败（{exc}）')
+                causes.append(phase)
+                stage = '浏览器启动失败' if phase == 'browser_launch' else '采集处理失败'
+                platform_errors.append(f'{label}：{stage}（{type(exc).__name__}）')
             finally:
-                if context is not None:
-                    await context.close()
-                    context = None
-                if playwright is not None:
-                    await playwright.stop()
-                    playwright = None
+                try:
+                    await close_browser(context, playwright)
+                except Exception as exc:
+                    causes.append('browser_cleanup')
+                    platform_errors.append(f'{label}：浏览器清理失败（{type(exc).__name__}）')
+                finally:
+                    context = playwright = None
             errors.extend(platform_errors)
             platform_status = ('partial' if platform_count else 'failed') if platform_errors else 'success'
             set_marketplace_status(run_id, platform, platform_status, '\n'.join(platform_errors))
@@ -169,8 +184,4 @@ async def run_tracking(*, platforms: tuple[str, ...] = ('xianyu', 'pdd')) -> Tra
         raise
     finally:
         _tracking_progress.clear()
-        if context is not None:
-            await context.close()
-        if playwright is not None:
-            await playwright.stop()
-        lock.release()
+        await close_browser(context, playwright)

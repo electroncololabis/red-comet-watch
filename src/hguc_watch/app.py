@@ -16,8 +16,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from . import DESKTOP_VERSION
+from .browser import BrowserBusyError, check_profile_available
 from .catalog import DEFAULT_SETTINGS
-from .config import APP_PORT, PROJECT_ROOT, DATA_DIR, RUN_LOCK_PATH, INSTALLED
+from .config import (
+    APP_PORT, BROWSER_PROFILE_DIR, DATA_DIR, INSTALLED,
+    PDD_BROWSER_PROFILE_DIR, PROJECT_ROOT, RUN_LOCK_PATH,
+)
 from .db import (
     block_listing,
     create_watch_item,
@@ -297,6 +301,10 @@ def run_status() -> dict[str, Any]:
 
 @app.post("/api/login-window")
 def login_window() -> dict[str, Any]:
+    try:
+        check_profile_available(BROWSER_PROFILE_DIR)
+    except BrowserBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
         [sys.executable, "-B", "-m", "hguc_watch.login"],
@@ -308,6 +316,10 @@ def login_window() -> dict[str, Any]:
 
 @app.post("/api/pdd/login-window")
 def pdd_login_window() -> dict[str, Any]:
+    try:
+        check_profile_available(PDD_BROWSER_PROFILE_DIR)
+    except BrowserBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     subprocess.Popen([sys.executable, '-B', '-m', 'hguc_watch.pdd'], cwd=PROJECT_ROOT,
                      creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     return {"ok": True, "message": "拼多多登录窗口已打开，完成登录后关闭窗口"}
